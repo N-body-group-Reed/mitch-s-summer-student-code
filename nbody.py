@@ -49,7 +49,7 @@ class NBody:
     def barnes_hut_nextTimeStep(self, t, softening=500):
         '''Barnes-Hut Algorithm Implementation'''
     
-        com = bh.centerOfMass(masses, self.pos)
+        com = bh.centerOfMass(self.mass, self.pos)
         maxDist = np.max(np.sum((self.pos - com) ** 2, 1))
         # Create the tree structure
         root = bh.BarnesHutNode(com, maxDist)
@@ -65,19 +65,10 @@ class NBody:
         # numerically integrate acceleration to update position and velocity
         self.leapfrogIntegrate(accel, t)
 
-# def updatePlot(frame_num, barnes_hut = True):
-#     '''Display the positions of each particle using matplotlib'''
-#     global nbody, t
-#     # barnes_hut = len(sys.argv) != 1 and sys.argv[1] == "B"
-#     if barnes_hut:
-#         nbody.barnes_hut_nextTimeStep(t)
-#     else:
-#         nbody.calcNextTimeStep(t)
-#     scatter._offsets3d = nbody.pos.T
-#     return (scatter)
-
 def saveFrames(nbody, t, path, numFrames, numFramesPerNotification=5):
+    '''Saves data from nbody model into animation frame files to be played back later'''
     t1 = time.time()
+    start = t1
     for i in range(numFrames):
         with open(path + '/' + str(i) + '.npy', 'wb') as f:
             np.save(f, nbody.pos)
@@ -87,67 +78,6 @@ def saveFrames(nbody, t, path, numFrames, numFramesPerNotification=5):
             print("Completed", i + 1, "frames!        Time per frame: %.2f s" %
                   ((t2 - t1) / numFramesPerNotification))
             t1 = time.time()
-            
+    end = time.time()        
     print("Simulation complete!")
-            
-
-if __name__ == '__main__':
-    # np.random.seed(1100)
-    
-    
-    # numParticles = 300
-    # dist = 400
-    # pos = np.zeros((numParticles + 1, 3))
-    # velocity = np.zeros((numParticles + 1, 3))
-    # masses = np.append(100000 * np.ones(1), 10 * np.ones(numParticles))
-    # for i in range(numParticles):
-    #     pos[i + 1] = 400 * np.random.rand(3) - 200
-    #     velocity[i + 1] = np.ones(3) / pos[i + 1] * 10
-    
-        
-    
-    numParticles = 199
-    pos = 400 * np.random.rand(numParticles, 3) + 200
-    pos2 = -400 * np.random.rand(numParticles, 3) - 200
-    pos = np.concatenate((np.array([[-400, -400, -400]]), np.array([[400, 400, 400]]), pos, pos2))
-    
-    velocity1 = -50 * np.random.rand(numParticles, 3)
-    velocity2 = 50 * np.random.rand(numParticles, 3)
-    velocity = np.concatenate((np.array([[0, 100, 0]]), np.array([[0, -100, 0]]), velocity1, velocity2))
-    numParticles *= 2
-    # # masses = 10 * np.random.rand(numParticles) + 1
-    blackHoles = np.array([10000, 10000])
-    masses = 20 * np.ones(numParticles)
-    masses = np.append(blackHoles, masses)
-
-    # numParticles = 2
-    # pos = np.array([[0, 0, 0], [0, 100, 0]])
-    # velocity = np.array([[0, 0, 0], [0, 0, 0]])
-    # masses = np.array([1000, 50])
-
-    # pos = np.array([[   0,   0, 0],
-    #                 [  0, 500 * 50 / 100, 0],
-    #                 [  0, 500 * 50 / 400, 0]])
-    # velocity = np.array([[ 0,  0,  0],
-    #                       [10, 0, 0],
-    #                       [0, 0, 20]])
-    # masses = np.array([500, 0.05, 0.05])
-
-    # oldAccel = np.zeros((numParticles, 3))
-    # G = 50 #6 * 10**(-11)
-    t = 0.05
-    
-    
-    nbody = NBody(pos, velocity, masses, 50)
-    saveFrames(nbody, 0.05, 'animations/force_soften_test', 2000)
-    # fig = plt.figure(figsize=(7,7))
-    # size = 400
-    # ax = plt.axes(xlim=(-size, size),ylim=(-size, size),zlim=(-size, size), projection='3d')
-    # # ax.set_title("Barnes Hut" if len(sys.argv) == 2 else "O(n^2)")
-    # # ax = fig.add_subplot(projection='3d')
-    # scatter=ax.scatter(pos[:,0], pos[:,1])#, pos[:, 2])
-    # anim = FuncAnimation(fig, updatePlot, interval=0.0001)
-    # # a = bh.centerOfMass(masses, pos).reshape((1, 3))
-    # # barnes_hut_nextTimeStep(masses, pos, velocity, oldAccel, t, G)
-    # # ax.scatter(a[:, 0], a[:, 1], a[:, 2], c='red')
-    # plt.show()
+    print("Generated", numFrames, "in %.2f seconds" % (end - start))

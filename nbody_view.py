@@ -19,8 +19,8 @@ def update_plot(scatter, path, frame_number):
 
 if __name__ == '__main__':
     fig = plt.figure(figsize=(7,7))
-    size = 4000
+    size = 400
     ax = plt.axes(xlim=(-size, size),ylim=(-size, size),zlim=(-size, size), projection='3d')
     scatter=ax.scatter(np.array([]), np.array([]))
-    anim = FuncAnimation(fig, lambda f: update_plot(scatter, 'animations/force_soften_test', f), interval=0.0001)
-    plt.show()
+    anim = FuncAnimation(fig, lambda f: update_plot(scatter, 'animations/orbit2', f), interval=0.1)
+    plt.show() 

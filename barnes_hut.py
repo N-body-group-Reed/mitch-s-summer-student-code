@@ -56,7 +56,6 @@ class BarnesHutNode:
                 absDiff[1] = 1 if absDiff[1] == 0 else absDiff[0]
                 absDiff[2] = 1 if absDiff[2] == 0 else absDiff[0]
                 signs = diff / absDiff
-                
             childCenter = signs * self.width / 4 + self.spatialCenter
             self.children[childName] = BarnesHutNode(childCenter, self.width/2)
 
@@ -68,35 +67,53 @@ def calcAcceleration(particle, node, threshold, softening=100):
     accel = np.zeros(3)
     diff = node.centerMass - particle
     distSquared = np.sum(diff ** 2) + softening
-    
     if node.isLeaf: # if the node only has one particle
-        accel += node.totalMass * diff / (distSquared ** 1.5)
+        if distSquared != 0:
+            accel += node.totalMass * diff / (distSquared ** 1.5)
+            # accel += soften(particle, node.centerMass, node.totalMass, np.sqrt(distSquared))
     else: # if the node contains multiple particles
         sd_ratio = node.width / np.sqrt(distSquared)
         if sd_ratio < threshold:
             # if the node is far away, treat all the particles within it as a single mass at its center
+            
             accel += node.totalMass * diff / (distSquared ** 1.5)
+            # accel += soften(particle, node.centerMass, node.totalMass, np.sqrt(distSquared))
         else: # if the node is nearby
             # Visit each childnode and determine its effects on this particle
             for child in node.children.values():
                 accel += calcAcceleration(particle, child, threshold, softening)
-    
+        
     return accel
 
-        
+def soften(pos1, pos2, mass2, dist, radius = 49):
+    '''Softens the force of particle 2 on particle 1 by treating particles as spheres with volume'''
+    
+    diff = pos2 - pos1
+    if dist > 2 * radius:
+        return mass2 * diff / dist ** 3
+    
+    totalVol = 4/3 * np.pi * (radius ** 3)
+    vol_intersect = np.pi * dist * (radius ** 2 - dist ** 2 / 12)
+    vol_non_intersect = totalVol - vol_intersect
+    com_intersect = (pos1 - pos2) / 2
+    com_non_intersect_p1 = (totalVol * pos1 - vol_intersect * com_intersect) / vol_non_intersect
+    com_non_intersect_p2 = (totalVol * pos2 - vol_intersect * com_intersect) / vol_non_intersect
+
+    percentIntersect = vol_intersect / totalVol
+    percentNonintersect = vol_non_intersect / totalVol
+    
+    squared_dist_p2_nonintersecting_p1 = np.sum((pos2 - com_non_intersect_p1) ** 2)
+    squared_dist_nonintersecting_p2_intersecting_p1 = np.sum((com_non_intersect_p2 - com_intersect) ** 2)
+    
+    accel_p2_nonintersecting_p1 = percentNonintersect * mass2 * diff / squared_dist_p2_nonintersecting_p1 ** 1.5
+    accel_nonintersecting_p2_on_intersecting_p1 = percentIntersect * mass2 * percentNonintersect * diff / squared_dist_nonintersecting_p2_intersecting_p1 ** 1.5
+    accel_repel = 0 * 0.001 * -diff
+    
+    accel = accel_p2_nonintersecting_p1 + accel_nonintersecting_p2_on_intersecting_p1 + accel_repel
+    return accel
+    
 
 def centerOfMass(masses, pos):
     '''Calculate the center of mass of a group of particles'''
     com = np.sum(pos * masses.reshape(len(masses), 1), axis=0) / np.sum(masses)
     return com
-
-if __name__ == '__main__':
-    numParticles = 100
-    pos = 200 * np.random.rand(numParticles, 3) - 100
-    root = BarnesHutNode(centerOfMass(np.ones(numParticles), pos), 200)
-    for i in range(numParticles):
-        root.insert(pos[i], 1)
-    fig = plt.figure(figsize=(7,7))
-    ax = plt.axes(xlim=(-400, 400),ylim=(-400, 400),zlim=(-400, 400), projection='3d')
-    scatter=ax.scatter(pos[:,0], pos[:,1], pos[:, 2])
-    plt.show()
