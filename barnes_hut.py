@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 class BarnesHutNode:
     def __init__(self, center, width):
         self.spatialCenter = center # center of the node (cube-shaped) in space
-        a = self.spatialCenter.reshape((1, 3))
         self.width = width # width of the node
         self.centerMass = np.zeros(3) # the center of mass of all particles contained in this node
         self.totalMass = 0 # total mass of particles in this node
@@ -68,8 +67,7 @@ def calcAcceleration(particle, node, threshold, softening=100):
     '''Calculate the net acceleration on a particle based on the Barnes-Hut algorithm'''
     accel = np.zeros(3)
     diff = node.centerMass - particle
-    squaredDiff = diff ** 2
-    distSquared = squaredDiff[0] + squaredDiff[1] + squaredDiff[2] + softening
+    distSquared = np.sum(diff ** 2) + softening
     
     if node.isLeaf: # if the node only has one particle
         accel += node.totalMass * diff / (distSquared ** 1.5)
