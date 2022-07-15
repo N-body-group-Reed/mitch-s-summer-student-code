@@ -60,7 +60,9 @@ class NBody:
         accel = np.zeros((self.numParticles, 3))
         
         for i in range(self.numParticles):
-            accel[i] += self.G * bh.calcAcceleration(self.pos[i], root, 1, softening)
+            accel[i] += self.G * bh.calcAcceleration(self.pos[i], self.mass[i], root, 1, softening)
+        # print(accel)
+        
         
         # numerically integrate acceleration to update position and velocity
         self.leapfrogIntegrate(accel, t)
@@ -71,7 +73,8 @@ def saveFrames(nbody, t, path, numFrames, numFramesPerNotification=5):
     start = t1
     for i in range(numFrames):
         with open(path + '/' + str(i) + '.npy', 'wb') as f:
-            np.save(f, nbody.pos)
+            data = np.concatenate((nbody.pos, nbody.velocity, nbody.mass.reshape(nbody.numParticles, 1)), axis=1)
+            np.save(f, data)
         nbody.barnes_hut_nextTimeStep(t)
         if (i + 1) % numFramesPerNotification == 0:
             t2 = time.time()

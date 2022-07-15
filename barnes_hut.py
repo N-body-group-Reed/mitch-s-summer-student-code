@@ -62,7 +62,7 @@ class BarnesHutNode:
         # insert the particle in the appropriate child node
         self.children[childName].insert(particle, particleMass)
     
-def calcAcceleration(particle, node, threshold, softening=100):
+def calcAcceleration(particle, mass, node, threshold, softening=100):
     '''Calculate the net acceleration on a particle based on the Barnes-Hut algorithm'''
     accel = np.zeros(3)
     diff = node.centerMass - particle
@@ -70,31 +70,35 @@ def calcAcceleration(particle, node, threshold, softening=100):
     if node.isLeaf: # if the node only has one particle
         if distSquared != 0:
             accel += node.totalMass * diff / (distSquared ** 1.5)
-            # accel += soften(particle, node.centerMass, node.totalMass, np.sqrt(distSquared))
+            # accel += soften(particle, node.centerMass, mass, node.totalMass, np.sqrt(distSquared))
     else: # if the node contains multiple particles
-        sd_ratio = node.width / np.sqrt(distSquared)
+        if distSquared == 0:
+            sd_ratio = threshold + 1
+        else:
+            sd_ratio = node.width / np.sqrt(distSquared)
+            
         if sd_ratio < threshold:
             # if the node is far away, treat all the particles within it as a single mass at its center
             
             accel += node.totalMass * diff / (distSquared ** 1.5)
-            # accel += soften(particle, node.centerMass, node.totalMass, np.sqrt(distSquared))
+            # accel += soften(particle, node.centerMass, mass, node.totalMass, np.sqrt(distSquared))
         else: # if the node is nearby
             # Visit each childnode and determine its effects on this particle
             for child in node.children.values():
-                accel += calcAcceleration(particle, child, threshold, softening)
-        
+                accel += calcAcceleration(particle, mass, child, threshold, softening)
+    
     return accel
 
-def soften(pos1, pos2, mass2, dist, radius = 49):
+def soften(pos1, pos2, mass1, mass2, dist, radius = 60):
     '''Softens the force of particle 2 on particle 1 by treating particles as spheres with volume'''
     
     diff = pos2 - pos1
-    if dist > 2 * radius:
+    if dist >= 2 * radius:
         return mass2 * diff / dist ** 3
     
     totalVol = 4/3 * np.pi * (radius ** 3)
-    vol_intersect = np.pi * dist * (radius ** 2 - dist ** 2 / 12)
-    vol_non_intersect = totalVol - vol_intersect
+    vol_non_intersect = np.pi * dist * (radius ** 2 - (dist ** 2) / 12)
+    vol_intersect = totalVol - vol_non_intersect
     com_intersect = (pos1 - pos2) / 2
     com_non_intersect_p1 = (totalVol * pos1 - vol_intersect * com_intersect) / vol_non_intersect
     com_non_intersect_p2 = (totalVol * pos2 - vol_intersect * com_intersect) / vol_non_intersect
@@ -107,9 +111,10 @@ def soften(pos1, pos2, mass2, dist, radius = 49):
     
     accel_p2_nonintersecting_p1 = percentNonintersect * mass2 * diff / squared_dist_p2_nonintersecting_p1 ** 1.5
     accel_nonintersecting_p2_on_intersecting_p1 = percentIntersect * mass2 * percentNonintersect * diff / squared_dist_nonintersecting_p2_intersecting_p1 ** 1.5
-    accel_repel = 0 * 0.001 * -diff
+    accel_repel = 100 * diff * (-dist + 2 * radius) / (mass1 * dist ** 2)
     
     accel = accel_p2_nonintersecting_p1 + accel_nonintersecting_p2_on_intersecting_p1 + accel_repel
+    # print(accel, pos1, pos2, vol_intersect, vol_non_intersect, accel_nonintersecting_p2_on_intersecting_p1, accel_p2_nonintersecting_p1)
     return accel
     
 
