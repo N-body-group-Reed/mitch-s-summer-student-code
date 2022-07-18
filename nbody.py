@@ -46,11 +46,14 @@ class NBody:
     
         self.leapfrogIntegrate(accel, t)
     
-    def barnes_hut_nextTimeStep(self, t, softening=500):
+    def barnes_hut_nextTimeStep(self, t, softening=100):
         '''Barnes-Hut Algorithm Implementation'''
     
         com = bh.centerOfMass(self.mass, self.pos)
+        
+        # set tree size based on the maximum dist from center of mass to any particle
         maxDist = np.max(np.sum((self.pos - com) ** 2, 1))
+        
         # Create the tree structure
         root = bh.BarnesHutNode(com, maxDist)
         for i in range(self.numParticles):
@@ -61,10 +64,8 @@ class NBody:
         
         for i in range(self.numParticles):
             accel[i] += self.G * bh.calcAcceleration(self.pos[i], self.mass[i], root, 1, softening)
-        # print(accel)
         
-        
-        # numerically integrate acceleration to update position and velocity
+        # update position and velocity
         self.leapfrogIntegrate(accel, t)
 
 def saveFrames(nbody, t, path, numFrames, numFramesPerNotification=5):
@@ -73,14 +74,19 @@ def saveFrames(nbody, t, path, numFrames, numFramesPerNotification=5):
     start = t1
     for i in range(numFrames):
         with open(path + '/' + str(i) + '.npy', 'wb') as f:
+            # combine position, velocity, and mass into a single array and save it
             data = np.concatenate((nbody.pos, nbody.velocity, nbody.mass.reshape(nbody.numParticles, 1)), axis=1)
             np.save(f, data)
+        
         nbody.barnes_hut_nextTimeStep(t)
+        
+        # print an update every few frames
         if (i + 1) % numFramesPerNotification == 0:
             t2 = time.time()
             print("Completed", i + 1, "frames!        Time per frame: %.2f s" %
                   ((t2 - t1) / numFramesPerNotification))
             t1 = time.time()
+            
     end = time.time()        
     print("Simulation complete!")
-    print("Generated", numFrames, "in %.2f seconds" % (end - start))
+    print("Generated", numFrames, "frames in %.2f seconds" % (end - start))
