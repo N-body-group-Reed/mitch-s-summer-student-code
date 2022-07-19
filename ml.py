@@ -146,7 +146,7 @@ def test():
     ax = plt.axes(xlim=(-size, size),ylim=(-size, size),zlim=(-size, size), projection='3d')
     scatter=ax.scatter(np.array([]), np.array([]))
     
-    combined = np.load('animations/3_body/027/0.npy')
+    combined = np.load('animations/3_body/000/0.npy')
     print(combined)
     def update_plot(frame_number):
         nonlocal model, scatter, combined

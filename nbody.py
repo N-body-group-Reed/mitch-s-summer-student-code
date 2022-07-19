@@ -29,7 +29,7 @@ class NBody:
         self.velocity = nextVelocity
         self.oldAccel = newAccel
 
-    def calcNextTimeStep(self, t, softening=100):
+    def calcNextTimeStep(self, t, softening=0):
         '''Basic O(n^2) method to update particle motion at a constant timestep'''
         accel = np.zeros((self.numParticles, 3))
         for i in range(self.numParticles):
@@ -46,7 +46,7 @@ class NBody:
     
         self.leapfrogIntegrate(accel, t)
     
-    def barnes_hut_nextTimeStep(self, t, softening=100):
+    def barnes_hut_nextTimeStep(self, t, softening=0):
         '''Barnes-Hut Algorithm Implementation'''
     
         com = bh.centerOfMass(self.mass, self.pos)
@@ -57,28 +57,38 @@ class NBody:
         # Create the tree structure
         root = bh.BarnesHutNode(com, maxDist)
         for i in range(self.numParticles):
-            root.insert(self.pos[i], self.mass[i])
+            root.insert(self.pos[i], self.mass[i], self.velocity[i])
         
         # Calculate accelerations for each particle
         accel = np.zeros((self.numParticles, 3))
-        
+        collided = False
+        newVelocities = np.array(self.velocity)
         for i in range(self.numParticles):
-            accel[i] += self.G * bh.calcAcceleration(self.pos[i], self.mass[i], root, 1, softening)
-        
+            # if collided:
+            newVel, collided = bh.handle_elastic_collisions(self.pos[i], self.velocity[i], self.mass[i], root, 0.1)
+            newVelocities[i] = newVel
+            # else:
+            accel[i] = self.G * bh.calcAcceleration(self.pos[i], self.mass[i], root, 1, softening)
         # update position and velocity
+        self.velocity = newVelocities
         self.leapfrogIntegrate(accel, t)
 
-def saveFrames(nbody, t, path, numFrames, numFramesPerNotification=5):
+def saveFrames(nbody, t, path, numFrames, numFramesPerNotification=5, saveEvery=10):
     '''Saves data from nbody model into animation frame files to be played back later'''
+    with open(path + '/' + 'data.npy', 'wb') as f:
+        data = np.concatenate((np.array([t * saveEvery]), nbody.mass))
+        np.save(f, data)
+    
     t1 = time.time()
     start = t1
     for i in range(numFrames):
-        with open(path + '/' + str(i) + '.npy', 'wb') as f:
+        with open(path + '/' + str(i//saveEvery) + '.npy', 'wb') as f:
             # combine position, velocity, and mass into a single array and save it
-            data = np.concatenate((nbody.pos, nbody.velocity, nbody.mass.reshape(nbody.numParticles, 1)), axis=1)
+            data = np.concatenate((nbody.pos, nbody.velocity), axis=1)
             np.save(f, data)
         
-        nbody.barnes_hut_nextTimeStep(t)
+        for j in range(saveEvery):
+            nbody.barnes_hut_nextTimeStep(t)
         
         # print an update every few frames
         if (i + 1) % numFramesPerNotification == 0:

@@ -67,5 +67,9 @@ def collision(dist=100, masses=np.array([1000, 1000])):
     
     return NBody(pos, velocity, masses, 1)
 
+def single(vel = np.array([[50, 0, 0]])):
+    pos = np.zeros((1, 3))
+    return NBody(pos, vel, np.array([10]), 1)
+
 if __name__ == '__main__':
-    saveFrames(collision(1), t=0.005, path='animations/force_softening_test', numFrames=10000)
+    saveFrames(collision(), t=0.001, path='animations/force_softening_test', numFrames=50000, numFramesPerNotification=100)
