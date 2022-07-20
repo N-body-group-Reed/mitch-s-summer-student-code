@@ -21,7 +21,7 @@ print(f"Using {device} device")
 
 
 class NBodyDataSet(Dataset):
-    def __init__(self, root_dir, startAnim=0, endAnim=350, numFrames=20000):
+    def __init__(self, root_dir, startAnim=0, endAnim=900, numFrames=2000):
         self.numAnims = endAnim - startAnim
         self.numFrames = numFrames
         self.start = startAnim
@@ -33,9 +33,17 @@ class NBodyDataSet(Dataset):
         anim = idx // (self.numFrames / 100)
         frame = (idx % (self.numFrames / 100)) * 100
         first = np.load("%s/%03d/0.npy" % (self.root_dir, anim + self.start))   
+        
+        data = np.load("%s/%03d/data.npy" % (self.root_dir, anim + self.start))
+        masses = data[1:]
+        t_step = data[0]
+        
         expected = np.load("%s/%03d/%d.npy" % (self.root_dir, anim + self.start, frame))
-        t = 0.005 * frame
-        return torch.from_numpy(np.append(first.flatten(), t)), torch.from_numpy(np.append(expected.flatten(), t))
+        t = t_step * frame
+        
+        input_data = np.concatenate((data, masses), axis=1)
+        expected_data = np.concatenate((expected, masses), axis=1)
+        return torch.from_numpy(np.append(input_data.flatten(), t)), torch.from_numpy(np.append(expected_data.flatten(), t))
 
 # Define model
 class NeuralNetwork(nn.Module):
@@ -43,6 +51,8 @@ class NeuralNetwork(nn.Module):
         super(NeuralNetwork, self).__init__()
         # self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
+            nn.Linear(22, 22),
+            nn.ReLU(),
             nn.Linear(22, 22),
             nn.ReLU(),
             nn.Linear(22, 22),
@@ -82,8 +92,8 @@ def train_one_epoch(epoch_index):
 
     return last_loss
 
-training_set = NBodyDataSet('animations/3_body', 0, 950, 20000)
-validation_set = NBodyDataSet('animations/3_body', 950, 1000, 20000)
+training_set = NBodyDataSet('animations/3_body', 0, 950, 2000)
+validation_set = NBodyDataSet('animations/3_body', 950, 1000, 2000)
  
 training_loader = DataLoader(training_set, batch_size=10, shuffle = True, num_workers = 3)
 validation_loader = DataLoader(validation_set, batch_size=10, shuffle = False, num_workers = 3)
@@ -160,4 +170,4 @@ def test():
     plt.show() 
 
 anim = None
-test() 
+train() 

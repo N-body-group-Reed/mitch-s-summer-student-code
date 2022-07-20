@@ -67,9 +67,17 @@ def collision(dist=100, masses=np.array([1000, 1000])):
     
     return NBody(pos, velocity, masses, 1)
 
+def separation(dist=100, masses=np.array([1000, 1000])):
+    '''Simple collision of two particles with no initial velocity'''
+    numParticles = 2
+    pos = np.array([[0, -dist/2, 0], [0, dist/2, 0]])
+    velocity = np.array([[0, -30, 0], [0, 30, 0]])
+    
+    return NBody(pos, velocity, masses, 1)
+
 def single(vel = np.array([[50, 0, 0]])):
     pos = np.zeros((1, 3))
     return NBody(pos, vel, np.array([10]), 1)
 
 if __name__ == '__main__':
-    saveFrames(collision(), t=0.001, path='animations/force_softening_test', numFrames=50000, numFramesPerNotification=100)
+    saveFrames(separation(), t=0.0001, path='animations/force_softening_test', numFrames=10000, numFramesPerNotification=100)
