@@ -65,11 +65,11 @@ class BarnesHutNode:
         # insert the particle in the appropriate child node
         self.children[childName].insert(particle, particleMass, vel)
     
-def calcAcceleration(particle, mass, node, threshold):
+def calcAcceleration(particle, mass, node, threshold, softening=0):
     '''Calculate the net acceleration on a particle based on the Barnes-Hut algorithm'''
     accel = np.zeros(3)
     diff = node.centerMass - particle
-    distSquared = np.sum(diff ** 2) + 0
+    distSquared = np.sum(diff ** 2) + (softening ** 2)
     if node.isLeaf: # if the node only has one particle
         if distSquared != 0:
             accel += node.totalMass * diff / (distSquared ** 1.5)
@@ -92,7 +92,7 @@ def calcAcceleration(particle, mass, node, threshold):
     
     return accel
 
-def handle_elastic_collisions(particle, vel, mass, node, threshold, radius=12):
+def handle_elastic_collisions(particle, vel, mass, node, threshold, radius=5):
     '''Causes particles to bounce off of each other when they get close
     Returns new velocity, whether there was a collision'''
         

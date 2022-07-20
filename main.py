@@ -80,4 +80,5 @@ def single(vel = np.array([[50, 0, 0]])):
     return NBody(pos, vel, np.array([10]), 1)
 
 if __name__ == '__main__':
-    saveFrames(separation(), t=0.0001, path='animations/force_softening_test', numFrames=10000, numFramesPerNotification=100)
+    saveFrames(orbit(3, 100), t=0.001, path='animations/small_orbit', numFrames=10000, numFramesPerNotification=100)
+    # saveFram( , 0.01, path='animations/force_softening_test', numFrames=1000, numFramesPerNotification=100)

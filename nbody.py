@@ -20,16 +20,13 @@ class NBody:
     
     
     def leapfrogKickDrift(self, t):
-        halfStepVelocity = self.velocity + self.oldAccel * (t/2)
-        nextPos = self.pos + halfStepVelocity * t
+        self.velocity += self.oldAccel * (t/2)
+        self.pos += self.velocity * t
         
-        self.pos = nextPos
         
     def leapfrogFinalKick(self, newAccel, t):
-        halfStepVelocity = self.velocity + self.oldAccel * (t/2)
-        nextVelocity = halfStepVelocity + newAccel * (t / 2)
+        self.velocity += newAccel * (t / 2)
         
-        self.velocity = nextVelocity
         self.oldAccel = newAccel
     
     def leapfrogIntegrate(self, newAccel, t):
@@ -81,7 +78,7 @@ class NBody:
         
         for i in range(self.numParticles):
             if not self.justCollided[i]:
-                accel[i] = self.G * bh.calcAcceleration(self.pos[i], self.mass[i], root, 1)
+                accel[i] = self.G * bh.calcAcceleration(self.pos[i], self.mass[i], root, 0.5)
         # update position and velocity
         self.leapfrogFinalKick(accel, t)
         
