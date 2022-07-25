@@ -21,17 +21,17 @@ print(f"Using {device} device")
 
 
 class NBodyDataSet(Dataset):
-    def __init__(self, root_dir, startAnim=0, endAnim=900, numFrames=2000):
+    def __init__(self, root_dir, startAnim=0, endAnim=900, numFrames=5000):
         self.numAnims = endAnim - startAnim
         self.numFrames = numFrames
         self.start = startAnim
         self.end = endAnim
         self.root_dir = root_dir
     def __len__(self):
-        return self.numAnims * self.numFrames // 10
+        return self.numAnims * self.numFrames
     def __getitem__(self, idx):
-        anim = idx // (self.numFrames // 10)
-        frame = (idx % (self.numFrames // 10)) * 10
+        anim = idx // (self.numFrames)
+        frame = (idx % (self.numFrames))
         first = np.load("%s/%03d/0.npy" % (self.root_dir, anim + self.start))   
         
         data = np.load("%s/%03d/data.npy" % (self.root_dir, anim + self.start))
@@ -43,9 +43,8 @@ class NBodyDataSet(Dataset):
         
         masses_T = masses.reshape((masses.shape[0], 1))
         
-        input_data = np.concatenate((first, masses_T), axis=1)
-        expected_data = np.concatenate((expected, masses_T), axis=1)
-        return torch.from_numpy(np.append(input_data.flatten(), t)), torch.from_numpy(np.append(expected_data.flatten(), t))
+        input_data = first#np.concatenate((first, masses_T), axis=1)
+        return torch.from_numpy(np.append(input_data.flatten(), t)), torch.from_numpy(expected.flatten())
 
 # Define model
 class NeuralNetwork(nn.Module):
@@ -53,11 +52,11 @@ class NeuralNetwork(nn.Module):
         super(NeuralNetwork, self).__init__()
         # self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(22, 22),
+            nn.Linear(19, 19),
             nn.ReLU(),
-            nn.Linear(22, 22),
+            nn.Linear(19, 18),
             nn.ReLU(),
-            nn.Linear(22, 22)
+            nn.Linear(18, 18)
         )
 
     def forward(self, x):
@@ -85,22 +84,23 @@ def train_one_epoch(epoch_index):
 
         # Gather data and report
         running_loss += loss.item()
-        if i % 1000 == 999:
-            last_loss = running_loss / 1000 # loss per batch
+        if i % 10 == 9:
+            last_loss = running_loss / 10 # loss per batch
             print('  batch {} loss: {}'.format(i + 1, last_loss))
             tb_x = epoch_index * len(training_loader) + i + 1
             running_loss = 0.
             
     return last_loss
 
-training_set = NBodyDataSet('animations/3_body', 0, 450, 2000)
-validation_set = NBodyDataSet('animations/3_body', 450, 500, 2000)
+training_set = NBodyDataSet('animations/3_body_same_mass', 0, 990, 5000)
+validation_set = NBodyDataSet('animations/3_body_same_mass', 990, 1000, 5000)
  
-training_loader = DataLoader(training_set, batch_size=10, shuffle = True, num_workers = 3)
-validation_loader = DataLoader(validation_set, batch_size=10, shuffle = False, num_workers = 3)
+training_loader = DataLoader(training_set, batch_size=5000, shuffle = True, num_workers = 8)
+validation_loader = DataLoader(validation_set, batch_size=5000, shuffle = False, num_workers = 3)
 
 loss_fn = torch.nn.MSELoss()
 model = NeuralNetwork().to(device)  
+model.load_state_dict(torch.load("models/model_20220724_145959_18"))
 optimizer = torch.optim.SGD(model.parameters(), lr=0.000001, momentum=0.001) 
 
 def train():
@@ -111,11 +111,11 @@ def train():
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     epoch_number = 0
     
-    EPOCHS = 50
+    EPOCHS = 5000
     
     best_vloss = 1_000_000_000.
     
-    for epoch in range(EPOCHS):
+    for epoch in range(2, EPOCHS):
         print('EPOCH {}:'.format(epoch_number + 1))
     
         # Make sure gradient tracking is on, and do a pass over the data
@@ -153,14 +153,14 @@ def train():
 def test():
     global anim
     model = NeuralNetwork()
-    model.load_state_dict(torch.load("models/model_20220720_105053_1"))
+    model.load_state_dict(torch.load("models/model_20220722_095529_35"))
     model.eval()
-    size = 100
+    size = 20
     fig = plt.figure(figsize=(7,7))
     ax = plt.axes(xlim=(-size, size),ylim=(-size, size),zlim=(-size, size), projection='3d')
     scatter=ax.scatter(np.array([]), np.array([]))
     
-    path = 'animations/3_body/000'
+    path = 'animations/3_body_same_mass/075'
     
     first = np.load(path + '/0.npy')
     data = np.load(path + '/data.npy')
@@ -168,15 +168,20 @@ def test():
     mass = data[1:]
     mass_T = mass.reshape(mass.shape[0], 1)
     
-    combined = np.concatenate((first, mass_T), axis=1).flatten()
+    combined = first.flatten()#np.concatenate((first, mass_T), axis=1).flatten()
     def update_plot(frame_number):
         nonlocal model, scatter, combined, t_step
-        inputs = np.append(combined.flatten(), frame_number * t_step)
+        inputs = np.append(combined.flatten(), frame_number * t_step * 10)
         prediction = model(torch.from_numpy(inputs).float())
-        prediction = prediction[:21].reshape(3, 7)
+        prediction = prediction.reshape(3, 6)
         pos_predicted = prediction[:, :3]
+        # print(inputs)
+        # print(prediction)
         # print(pos_predicted)
+        # print()
+        
         scatter._offsets3d = pos_predicted.T.detach().numpy()
+        # scatter.set_offsets(pos_predicted.T.detach().numpy())
         
     anim = FuncAnimation(fig, update_plot, interval=0.1)
     plt.show() 

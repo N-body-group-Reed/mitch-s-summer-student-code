@@ -10,82 +10,97 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
 
-def update_plot(scatter, path, frame_number, t, masses):
-    global old_com
-    
-    try:
-        data = np.load(path + '/' + str(frame_number * 10) + '.npy')
-        pos = data[:, :3]
-        # print(pos)
-        # print(data[0, 3:6])
-        com = np.sum(pos * masses.reshape(len(masses), 1), axis=0) / np.sum(masses)
-        vel = (com - old_com) / (t * 10)
-        old_com = com
+
+class NBodyView:
+    def __init__(self, path, size):
         
-        # print(data[:, 3:6], calc_energy(masses, pos, data[:, 3:6], vel))
-        print("Velocity:", vel, "Energy:", calc_energy(masses, pos, data[:, 3:6], vel))
+        self.path = path
+        self.size = size
         
-        # scatter.set_offsets(pos)
+        self.anim = None
+        self.old_com = np.zeros(3)
+        self.scatter = None
+        self.t = None
+        self.masses = None
         
-        scatter._offsets3d = pos.T
-        # print(data)
-    except FileNotFoundError:
-        pass
+        self.load_anim()
+        self.create_plot()
+
+    def update_plot(self, frame_number):
+        global old_com
+        try:
+            data = np.load(self.path + '/' + str(frame_number * 10) + '.npy')
+            pos = data[:, :3]
+            com = np.sum(pos * self.masses.reshape(len(self.masses), 1), axis=0) / np.sum(self.masses)
+            vel = (com - self.old_com) / (self.t * 10)
+            self.old_com = com
+            pos -= com
             
-def create_plot(path, size=500):
-   fig = plt.figure(figsize=(7,7))
-   ax = plt.axes(xlim=(-size, size),ylim=(-size, size),zlim=(-size, size), projection='3d')
-   scatter=ax.scatter(np.array([]), np.array([]))
-   global anim 
-   t, masses = load_anim(path)
-   anim = FuncAnimation(fig, lambda f: update_plot(scatter, path, f, t, masses), interval=10)
-   plt.show()
+            # print(data[:, 3:6], calc_energy(masses, pos, data[:, 3:6], vel))
+            # print(calc_energy(masses, pos, data[:, 3:6]))
+            print("Velocity:", vel, "Energy:", self.calc_energy(pos, data[:, 3:6]))
+            
+            self.scatter.set_offsets(pos)
+            
+            # self.scatter._offsets3d = pos.T
+            # print(data)
+        except FileNotFoundError:
+            # print(self.path + '/' + str(frame_number * 1) + '.npy')
+            pass
+                
+    def create_plot(self):
+       fig = plt.figure(figsize=(7,7))
+       ax = plt.axes(xlim=(-self.size, self.size),ylim=(-self.size, self.size))#,
+                     #zlim=(-self.size, self.size), projection='3d')
+       
+       self.scatter=ax.scatter(np.array([]), np.array([]))
+       self.anim = FuncAnimation(fig, self.update_plot, interval=0.001)
+       
+       plt.show()
+        
+    def calc_energy(self, pos, vel):
+        KE = 0
+        PE = 0
+        for i in range(self.masses.shape[0]):
+            KE += 0.5 * self.masses[i] * np.sum((vel[i]) ** 2)
+            for j in range(self.masses.shape[0]):
+                if i != j:
+                    PE -= self.masses[i] * self.masses[j] / np.sqrt(np.sum((pos[i] - pos[j]) ** 2))
+        # print(KE, PE, end="\t")
+        PE /= 2
+        
+        return KE + PE
+        
+    def load_anim(self):
+        arr = np.load(self.path + '/data.npy')
+        self.t = arr[0]
+        self.masses = arr[1:]
+        print(self.t)
     
-def calc_energy(masses, pos, vel, com_vel):
-    KE = 0
-    PE = 0
-    for i in range(masses.shape[0]):
-        KE += 0.5 * masses[i] * np.sum((vel[i]) ** 2)
-        for j in range(masses.shape[0]):
-            if i != j:
-                PE -= masses[i] * masses[j] / np.sqrt(np.sum((pos[i] - pos[j]) ** 2))
-    # print(KE, PE, end="\t")
-    PE /= 2
-    
-    # KE = 0.5 * np.sum(np.sum( masses * (vel)**2 ))
-
-
-    # # # Potential Energy:
-
-    # # positions r = [x,y,z] for all particles
-    # x = pos[:,0:1]
-    # y = pos[:,1:2]
-    # z = pos[:,2:3]
-
-    # # matrix that stores all pairwise particle separations: r_j - r_i
-    # dx = x.T - x
-    # dy = y.T - y
-    # dz = z.T - z
-
-    # # matrix that stores 1/r for all particle pairwise particle separations 
-    # inv_r = np.sqrt(dx**2 + dy**2 + dz**2)
-    # inv_r[inv_r>0] = 1.0/inv_r[inv_r>0]
-
-    # masses_T = masses.reshape((masses.shape[0], 1))
-
-    # # sum over upper triangle, to count each interaction only once
-    # PE = np.sum(np.sum(np.triu(-(masses*masses_T)*inv_r,1)))
-    
-    return KE + PE;
-
-    
-def load_anim(path):
-    arr = np.load(path + '/data.npy')
-    t = arr[0]
-    masses = arr[1:]
-    return t, masses
+    def isEnergyConserved(self, acceptableError=0.2):
+        minEnergy = None
+        maxEnergy = None
+        
+        for i in range(5000):
+            data = np.load(self.path + '/' + str(i) + '.npy')
+            pos = data[:, :3]
+            # com = np.sum(pos * self.masses.reshape(len(self.masses), 1), axis=0) / np.sum(self.masses)
+            
+            e = self.calc_energy(pos, data[:, 3:6])
+            if minEnergy == None or e < minEnergy:
+                minEnergy = e
+            if maxEnergy == None or e > maxEnergy:
+                maxEnergy = e
+        
+        variability = (maxEnergy - minEnergy) / minEnergy
+        
+        return variability < acceptableError
 
 if __name__ == '__main__':
-    anim = None
-    old_com = np.zeros(3)
-    create_plot('animations/3_body/000')
+    abc = NBodyView('animations/3_body_same_mass/000', 20)
+    
+    # for i in range(1000):
+    #     if i % 50 == 0:
+    #         print('-')
+    #     if not isEnergyConserved('animations/3_body_same_mass/%03d' % i):
+    #         print(i)
