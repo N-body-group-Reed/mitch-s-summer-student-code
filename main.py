@@ -11,13 +11,49 @@ import nbody_view
 import argparse
 
 parser = argparse.ArgumentParser(description='An N-Body Simulator')
-parser.add_argument("input_file", help="file containing initial conditions(pos, vel, mass) of all particles")
-parser.add_argument("output_dir", help="folder to store simulation output")
-parser.add_argument("time", help="the length of time that will be simulated", type=int)
-parser.add_argument("-b", "--barnes_hut", help="Use the barnes-hut algorithm to speed up execution",
-                    action="store_true")
-parser.add_argument("-c", "--collide", help="Allow particles to collide elastically",
-                    action="store_true")
+
+subparsers = parser.add_subparsers(dest="mode", help="Mode: [S]imulate or [V]iew saved simulation")
+
+sim = subparsers.add_parser("S")
+view = subparsers.add_parser("V")
+
+sim.add_argument("input_file", help="file containing initial conditions(pos, vel, mass) of all particles")
+sim.add_argument("output_dir", help="folder to store simulation output")
+sim.add_argument("time", help="the length of time that will be simulated", type=int)
+sim.add_argument("-t", "--time_step", help="the amount of time in between each simulation update", type=float)
+sim.add_argument("-b", "--barnes_hut", 
+                 help="Use the barnes-hut algorithm to speed up execution for a large # of particles",
+                 action="store_true")
+sim.add_argument("-c", "--collide_radius", help="Allow particles to collide elastically with a specified radius",
+                 type=float)
+sim.add_argument("-G", "--G_Constant", help="Set value of gravitational constant",
+                 type=float, default=1)
+
+view.add_argument("input_dir", help="directory containing simulation data")
+view.add_argument("-s", "--size", help="Set size of display", default=100, type=int)
+view.add_argument("-d", "--use_2d", help="display particles in a 2d projection instead of 3d",
+                  action="store_true")
+view.add_argument("-r", "--relative", help="keep view relative to center of mass",
+                  action="store_true")
+view.add_argument("-e", "--energy", help="plot the energy of the system",
+                  action="store_true")
+view.add_argument("-t", "--time_scale", help="speed up visualization by a given factor",
+                  default=1, type=int)
 
 args = parser.parse_args()
 
+if args.mode == "S":
+    t_step = args.time_step if args.time_step is not None else args.time / 1000
+    numFrames = int(args.time / t_step)
+    
+    colliding = args.collide_radius is not None
+    
+    sim = nbody.NBody.FromFile(args.input_file, barnes_hut=args.barnes_hut,
+                               use_collisions=colliding, particle_radius=args.collide_radius,
+                               G=args.G_Constant)
+    sim.save(t_step, args.output_dir, numFrames)
+
+else:
+    view = nbody_view.NBodyView(args.input_dir, args.size, not args.use_2d,
+                                args.relative, args.time_scale, args.energy)
+    view.display()

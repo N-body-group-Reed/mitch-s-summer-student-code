@@ -1,6 +1,7 @@
 
 import numpy as np
 import physics_helper as ph
+import math
 
 class BarnesHutNode:
     def __init__(self, center, width):
@@ -61,6 +62,7 @@ class BarnesHutNode:
         #
         # Ex: +++ means that the particle belongs in the child node that has a larger x, y, and z coord
         # relative to the current node's center
+        
         diff = particle_pos - self.spatialCenter
         childName =  "+" if (diff[0] > 0) else "-"
         childName += "+" if (diff[1] > 0) else "-"
@@ -73,12 +75,17 @@ class BarnesHutNode:
             # replace 0s with 1s to avoid divide by 0 errors 
             absDiff = np.abs(diff)
             absDiff[0] = 1 if absDiff[0] == 0 else absDiff[0]
-            absDiff[1] = 1 if absDiff[1] == 0 else absDiff[0]
-            absDiff[2] = 1 if absDiff[2] == 0 else absDiff[0]
+            absDiff[1] = 1 if absDiff[1] == 0 else absDiff[1]
+            absDiff[2] = 1 if absDiff[2] == 0 else absDiff[2]
             
             # create a vector storing just the signs (+1, -1) of the diff vector
             signs = diff / absDiff
             
+            # if the particle is directly on the center of the node, default to the --- node
+            # (arbitrary choice)
+            if np.isclose(particle_pos, self.spatialCenter).all():
+                signs = -np.ones_like(signs)
+                
             # create the node and store it in the children dictionary
             childCenter = signs * self.width / 4 + self.spatialCenter
             self.children[childName] = BarnesHutNode(childCenter, self.width/2)
@@ -99,12 +106,11 @@ def calcAcceleration(particle, mass, node, threshold, softening=3):
     
     Threshold: value used to determine when a particles are sufficiently far away
     Softening: Value used to reduce the impact of forces when particles get close'''
-    
     accel = np.zeros(3)
     diff = node.centerMass - particle
-    distSquared = np.sum(diff ** 2) + (softening ** 2)
+    distSquared = np.dot(diff, diff) + (softening ** 2)
     if node.isLeaf: # if the node only has one particle
-        if distSquared != 0:
+        if not np.isclose(node.centerMass, particle).all():
             accel += node.totalMass * diff / (distSquared ** 1.5)
     else: # if the node contains multiple particles
         if distSquared == 0:
@@ -119,11 +125,10 @@ def calcAcceleration(particle, mass, node, threshold, softening=3):
         else: # if the node is nearby
             # Visit each childnode and determine its effects on this particle
             for child in node.children.values():
-                accel += calcAcceleration(particle, mass, child, threshold)
-    
+                accel += calcAcceleration(particle, mass, child, threshold, softening)
     return accel
 
-def handle_elastic_collisions(particle, vel, mass, node, threshold, radius=0):
+def handle_elastic_collisions(particle, vel, mass, node, threshold, radius=5):
     '''Causes particles to bounce off of each other when they get close while
     conserving kinetic energy.
     
@@ -133,15 +138,12 @@ def handle_elastic_collisions(particle, vel, mass, node, threshold, radius=0):
     ### Double check that this algorithm works
     ### There may be cases where the threshold isn't met even though a collision should happen
     
-    diff = node.centerMass - particle
-    dist = np.sqrt(np.sum(diff ** 2))
+    dist = ph.dist(node.centerMass, particle)
     if node.isLeaf: # if the node only has one particle
-        if dist != 0:
+        if not np.isclose(node.centerMass, particle).all():
             if dist < 2 * radius:
-               
                 v = ph.elastic_collision(particle, vel, mass, node.centerMass,
-                                                  node.velocity, node.totalMass)
-                
+                                         node.velocity, node.totalMass)
                 return v[0]
     else: # if the node contains multiple particles
         if dist == 0:
@@ -156,7 +158,7 @@ def handle_elastic_collisions(particle, vel, mass, node, threshold, radius=0):
             for child in node.children.values():
                 # check if we collide with any child nodes
                 v = handle_elastic_collisions(particle, vel, mass, child, threshold, radius)
-                if v != vel:
+                if (v != vel).any():
                     return v
     
     return vel

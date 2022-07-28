@@ -6,7 +6,7 @@ import time
 
 class NBody:
     def __init__(self, pos, vel, mass, G, barnes_hut=True, use_collisions=False,
-                 softening=0):
+                 softening=0, particle_radius=None):
         '''Implementation of an n-body system
         
         pos and vel are stored as an N x 3 matrix
@@ -20,10 +20,23 @@ class NBody:
         self.barnes_hut = barnes_hut
         self.use_collisions = use_collisions
         self.softening = softening
+        self.particle_radius = particle_radius
         
         self.oldAccel = np.zeros(3)
         self.justCollided = [False for i in range(self.numParticles)]
+    
+    @classmethod
+    def FromFile(cls, path, *args, **kwargs):
+        '''Reads in a space separated file of particle data
+        Format should be: [posX] [posY] [posZ] [velX] [velY] [velZ] [mass] on every line'''
         
+        data = np.loadtxt(path)
+        pos = data[:, :3]
+        vel = data[:, 3:6]
+        mass = data[:, 6].reshape(data.shape[0])
+        
+        return cls(pos, vel, mass, *args, **kwargs)
+    
     def leapfrogKickDrift(self, t):
         self.velocity += self.oldAccel * (t/2)
         self.pos += self.velocity * t
@@ -47,32 +60,79 @@ class NBody:
     
                     # calculate the distance based on the vector between them
                     distSquared = np.sum(diff ** 2) + self.softening**2
-    
-                    # if this particle has just been in a collision, 
-                    # that force will be much stronger than gravitational forces.
-                    #
-                    # This also prevents particles from getting pulled into each other 
-                    # by giving them time to separate
-                    if not self.justCollided[i]:
-                        # update acceleration based on the law of gravitation
-                        accel[i] += self.G * self.mass[j] * diff / (distSquared ** 1.5)
-                    
-                    # handle collisions
-                    if self.use_collisions:
-                        newVel = ph.elastic_collision(self.pos[i], self.vel[i], self.mass[i],
-                                                      self.pos[j], self.pos[j], self.mass[j])[0]
-                        collided = newVel != self.velocity[i]
-                        if collided and not self.justCollided[i]:
-                            newVelocities[i] = newVel
-                            self.justCollided[i] = True
-                            
-                        self.justCollided[i] = collided
+
+                    accel[i] += self.G * self.mass[j] * diff / (distSquared ** 1.5)
         
         self.leapfrogFinalKick(accel, t)
         
-        if self.use_collisions:
-            self.velocity = newVelocities
         
+        # Handle Collisions
+        if self.use_collisions: 
+            experiencedCollision = [False for i in range(self.numParticles)]
+            newVelocities = np.array(self.velocity)
+            for i in range(self.numParticles):
+                for j in range(self.numParticles):
+                    if i != j:
+                        dist = ph.dist(self.pos[i], self.pos[j])
+                        collided = dist < 2 * self.particle_radius
+                        if collided and not self.justCollided[i]:
+                            newVel = ph.elastic_collision(self.pos[i], self.velocity[i], self.mass[i],
+                                                          self.pos[j], self.velocity[j], self.mass[j])[0]
+                            newVelocities[i] = newVel
+                        
+                        if collided:
+                            experiencedCollision[i] = True
+                            break
+                        
+            self.justCollided = experiencedCollision
+            self.velocity = newVelocities
+    
+    def naive_vectorized_step(self, t):
+        
+        ### INSPIRED BY https://medium.com/swlh/create-your-own-n-body-simulation-with-python-f417234885e9
+        
+        self.leapfrogKickDrift(t)
+        
+        x = self.pos[:,0:1]
+        y = self.pos[:,1:2]
+        z = self.pos[:,2:3]
+        
+        # matrix that stores all pairwise particle separations: r_j - r_i
+        dx = x.T - x
+        dy = y.T - y
+        dz = z.T - z
+        
+        # matrix that stores 1/r^3 for all particle pairwise particle separations 
+        distSquared = dx**2 + dy**2 + dz**2 + self.softening**2
+        inv_r3 = np.power(distSquared, -1.5, out=np.zeros_like(distSquared), where=distSquared!=0)
+        ax = self.G * (dx * inv_r3) @ self.mass
+        ay = self.G * (dy * inv_r3) @ self.mass
+        az = self.G * (dz * inv_r3) @ self.mass
+        
+        # pack together the acceleration components
+        accel = np.stack((ax, ay, az), axis=1)
+        self.leapfrogFinalKick(accel, t)
+        
+        if self.use_collisions: 
+            experiencedCollision = [False for i in range(self.numParticles)]
+            newVelocities = np.array(self.velocity)
+            for i in range(self.numParticles):
+                for j in range(self.numParticles):
+                    if i != j:
+                        dist = ph.dist(self.pos[i], self.pos[j])
+                        collided = dist < 2 * self.particle_radius
+                        if collided and not self.justCollided[i]:
+                            newVel = ph.elastic_collision(self.pos[i], self.velocity[i], self.mass[i],
+                                                          self.pos[j], self.velocity[j], self.mass[j])[0]
+                            newVelocities[i] = newVel
+                        
+                        if collided:
+                            experiencedCollision[i] = True
+                            break
+                        
+            self.justCollided = experiencedCollision
+            self.velocity = newVelocities
+    
     def barnes_hut_step(self, t):
         '''Barnes-Hut Algorithm Implementation'''
         
@@ -80,7 +140,7 @@ class NBody:
         
         # set tree size based on the maximum dist from center of mass to any particle
         com = ph.centerOfMass(self.mass, self.pos)
-        maxDist = np.max(np.sum((self.pos - com) ** 2, 1)) + 1
+        maxDist = np.sqrt(np.max(np.sum((self.pos - com) ** 2, 1))) + 1
             
         # Create the tree structure
         root = bh.BarnesHutNode(com, maxDist)
@@ -89,44 +149,34 @@ class NBody:
             
         # Calculate accelerations for each particle
         accel = np.zeros((self.numParticles, 3))
-        collided = False
         for i in range(self.numParticles):
-            
-            # if this particle has just been in a collision, 
-            # that force will be much stronger than gravitational forces.
-            #
-            # This also prevents particles from getting pulled into each other 
-            # by giving them time to separate
-            if not self.justCollided[i]:
-                accel[i] = self.G * bh.calcAcceleration(self.pos[i], self.mass[i], root, 0.5, self.softening)
-                
+            accel[i] = self.G * bh.calcAcceleration(self.pos[i], self.mass[i], root, 1, self.softening)
         self.leapfrogFinalKick(accel, t)
-        
         
         # Handle collisions
         if self.use_collisions:
+            experiencedCollision = [False for i in range(self.numParticles)]
             newVelocities = np.array(self.velocity)
             for i in range(self.numParticles):
-                newVel = bh.handle_elastic_collisions(self.pos[i], self.velocity[i], self.mass[i], root, 0.5)
-                collided = newVel != self.velocity[i]
+                newVel = bh.handle_elastic_collisions(self.pos[i], self.velocity[i], self.mass[i], root, 0.5, self.particle_radius)
+                collided = (newVel != self.velocity[i]).any()
                 if collided and not self.justCollided[i]:
                     newVelocities[i] = newVel
-                    self.justCollided[i] = True
                     
-                self.justCollided[i] = collided
+                if collided:
+                    experiencedCollision[i] = True
                 
+            self.justCollided = experiencedCollision
             self.velocity = newVelocities
         
     def advanceSimulation(self, t):
         if self.barnes_hut:
             self.barnes_hut_step(t)
         else:
-            self.naive_step(t)
+            self.naive_vectorized_step(t)
     
-    def save(self, t, path, numFrames, numFramesPerNotification=5, saveEvery=10):
-        '''Saves data from nbody model into animation frame files to be played back later
-        
-        If a variable time step is to be used, t represents the max possible time step allowed'''
+    def save(self, t, path, numFrames, numFramesPerNotification=None, saveEvery=1):
+        '''Saves data from nbody model into animation frame files to be played back later'''
         
         # store the timestep and mass in a data file since they are the same for
         # each frame
@@ -147,11 +197,12 @@ class NBody:
                 self.advanceSimulation(t)
             
             # print an update every few frames
-            if (i + 1) % numFramesPerNotification == 0:
-                t2 = time.time()
-                print("Completed", i + 1, "frames!        Time per frame: %.2f s" %
-                      ((t2 - t1) / numFramesPerNotification))
-                t1 = time.time()
+            if numFramesPerNotification is not None:
+                if (i + 1) % numFramesPerNotification == 0:
+                    t2 = time.time()
+                    print("Completed", i + 1, "frames!        Time per frame: %.2f s" %
+                          ((t2 - t1) / numFramesPerNotification))
+                    t1 = time.time()
                 
         end = time.time()        
         print("Simulation complete!")

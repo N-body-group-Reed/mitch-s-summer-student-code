@@ -24,6 +24,10 @@ def elastic_collision(p1_pos, p1_vel, p1_mass, p2_pos, p2_vel, p2_mass):
     # https://physics.stackexchange.com/questions/681396/elastic-collision-3d-eqaution
     
     diff = p2_pos - p1_pos
+    
+    if (diff == 0).all():
+        return p1_vel, p2_vel
+    
     dist = np.sqrt(np.sum(diff ** 2))
     normal = (p1_pos - p2_pos) / dist
     
@@ -32,5 +36,8 @@ def elastic_collision(p1_pos, p1_vel, p1_mass, p2_pos, p2_vel, p2_mass):
     impulse_magnitude = 2 * eff_mass * impact_speed
     
     impulse = normal * impulse_magnitude
-    
     return p1_vel - impulse / p1_mass, p2_vel + impulse / p2_mass
+
+
+def dist(vector1, vector2):
+    return np.sqrt(np.sum((vector1 - vector2) ** 2))

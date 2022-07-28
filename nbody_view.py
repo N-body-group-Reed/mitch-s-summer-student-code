@@ -8,55 +8,93 @@ Created on Wed Jul 13 10:17:07 2022
 
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib import ticker
 import numpy as np
 
 
 class NBodyView:
-    def __init__(self, path, size):
+    def __init__(self, path, size, three_dimensional=True, relativeToCenterOfMass=True,
+                 timeScale=1, plot_energy=False):
         
         self.path = path
         self.size = size
+        self.three_dimensional = three_dimensional
+        self.relativeToCenterOfMass = relativeToCenterOfMass
+        self.timeScale = timeScale
+        self.plot_energy = plot_energy
+        self.energyX = np.array([])
+        self.energyY = np.array([])
+        self.energyAx = None
         
         self.anim = None
         self.old_com = np.zeros(3)
         self.scatter = None
+        self.energy_scatter = None
         self.t = None
         self.masses = None
         
         self.load_anim()
-        self.create_plot()
 
     def update_plot(self, frame_number):
-        global old_com
         try:
-            data = np.load(self.path + '/' + str(frame_number * 10) + '.npy')
+            data = np.load(self.path + '/' + str(frame_number * self.timeScale) + '.npy')
             pos = data[:, :3]
+            vel = data[:, 3:6]
             com = np.sum(pos * self.masses.reshape(len(self.masses), 1), axis=0) / np.sum(self.masses)
-            vel = (com - self.old_com) / (self.t * 10)
+            com_vel = (com - self.old_com) / (self.t * self.timeScale)
             self.old_com = com
-            pos -= com
             
-            # print(data[:, 3:6], calc_energy(masses, pos, data[:, 3:6], vel))
-            # print(calc_energy(masses, pos, data[:, 3:6]))
-            print("Velocity:", vel, "Energy:", self.calc_energy(pos, data[:, 3:6]))
+            if self.plot_energy and frame_number != 0:
+                energy = self.calc_energy(pos, vel)
+                self.energyX = np.append(self.energyX, [frame_number * self.t * self.timeScale])
+                self.energyY = np.append(self.energyY, [energy])
+                self.energyAx.scatter(self.energyX, self.energyY, 9, color='blue')
             
-            self.scatter.set_offsets(pos)
+            if self.relativeToCenterOfMass:
+                pos -= com
             
-            # self.scatter._offsets3d = pos.T
-            # print(data)
+            if self.three_dimensional:
+                self.scatter._offsets3d = pos.T
+            else:
+                self.scatter.set_offsets(pos[:, :2])
         except FileNotFoundError:
-            # print(self.path + '/' + str(frame_number * 1) + '.npy')
-            pass
+            self.anim.event_source.stop()
                 
-    def create_plot(self):
-       fig = plt.figure(figsize=(7,7))
-       ax = plt.axes(xlim=(-self.size, self.size),ylim=(-self.size, self.size))#,
-                     #zlim=(-self.size, self.size), projection='3d')
-       
-       self.scatter=ax.scatter(np.array([]), np.array([]))
-       self.anim = FuncAnimation(fig, self.update_plot, interval=0.001)
-       
-       plt.show()
+    def display(self):
+        fig = plt.figure(figsize=(7,7))
+        ax = None
+        
+        if self.plot_energy:
+            grid = plt.GridSpec(3, 1, wspace=0.0, hspace=0.5)
+            if self.three_dimensional:
+                ax = plt.subplot(grid[0:2,0],
+                                 xlim=(-self.size, self.size),
+                                 ylim=(-self.size, self.size),
+                                 zlim=(-self.size, self.size),
+                                 projection='3d')
+            else:
+                ax = plt.subplot(grid[0:2,0],
+                                 xlim=(-self.size, self.size),
+                                 ylim=(-self.size, self.size))
+
+            self.energyAx = plt.subplot(grid[2:,0])
+            axis_format = ticker.FormatStrFormatter("%.6f")
+            self.energyAx.yaxis.set_major_formatter(axis_format)
+        else:
+            if self.three_dimensional:
+                ax = plt.axes(xlim=(-self.size, self.size),
+                              ylim=(-self.size, self.size),
+                              zlim=(-self.size, self.size),
+                              projection='3d')
+            else:
+                ax = plt.axes(xlim=(-self.size, self.size),
+                              ylim=(-self.size, self.size))
+        
+        
+        self.scatter = ax.scatter(np.array([]), np.array([]))
+        self.anim = FuncAnimation(fig, self.update_plot, interval=0.0001)
+        
+        plt.show()
         
     def calc_energy(self, pos, vel):
         KE = 0
@@ -75,16 +113,14 @@ class NBodyView:
         arr = np.load(self.path + '/data.npy')
         self.t = arr[0]
         self.masses = arr[1:]
-        print(self.t)
     
-    def isEnergyConserved(self, acceptableError=0.2):
+    def isEnergyConserved(self, acceptableError=0.01):
         minEnergy = None
         maxEnergy = None
         
         for i in range(5000):
             data = np.load(self.path + '/' + str(i) + '.npy')
             pos = data[:, :3]
-            # com = np.sum(pos * self.masses.reshape(len(self.masses), 1), axis=0) / np.sum(self.masses)
             
             e = self.calc_energy(pos, data[:, 3:6])
             if minEnergy == None or e < minEnergy:
@@ -92,15 +128,16 @@ class NBodyView:
             if maxEnergy == None or e > maxEnergy:
                 maxEnergy = e
         
+        print(maxEnergy, minEnergy)
         variability = (maxEnergy - minEnergy) / minEnergy
         
         return variability < acceptableError
 
 if __name__ == '__main__':
-    abc = NBodyView('animations/3_body_same_mass/000', 20)
+    abc = NBodyView('animations/3_body_same_mass/0000', 200, True)
+    abc.display()
     
-    # for i in range(1000):
-    #     if i % 50 == 0:
-    #         print('-')
-    #     if not isEnergyConserved('animations/3_body_same_mass/%03d' % i):
-    #         print(i)
+    # for i in range(10):
+    #     abc = NBodyView('animations/3_body_same_mass/%04d' % i, 40)
+    #     print(abc.isEnergyConserved())
+            
