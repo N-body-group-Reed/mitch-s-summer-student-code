@@ -6,6 +6,15 @@ Created on Fri Jul 22 11:45:59 2022
 @author: uzair
 """
 
+# Quick Testing Instructions
+#
+# Run: `python3 main.py S sample_data.txt [output_dir] 100 -t 0.005`
+# This creates an orbital simulation
+#
+# Run: `python3 main.py V [simulation_dir] -e -t 50`
+# This visualizes the simulation with an energy plot as well
+# Watch the scale of the energy plot: it's zoomed in so it seems like it varies more than it does
+
 import nbody
 import nbody_view
 import argparse

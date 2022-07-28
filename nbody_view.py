@@ -48,6 +48,7 @@ class NBodyView:
                 energy = self.calc_energy(pos, vel)
                 self.energyX = np.append(self.energyX, [frame_number * self.t * self.timeScale])
                 self.energyY = np.append(self.energyY, [energy])
+                plt.cla()
                 self.energyAx.scatter(self.energyX, self.energyY, 9, color='blue')
             
             if self.relativeToCenterOfMass:
