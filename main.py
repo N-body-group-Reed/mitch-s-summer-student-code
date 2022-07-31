@@ -28,13 +28,15 @@ view = subparsers.add_parser("V")
 
 sim.add_argument("input_file", help="file containing initial conditions(pos, vel, mass) of all particles")
 sim.add_argument("output_dir", help="folder to store simulation output")
-sim.add_argument("time", help="the length of time that will be simulated", type=int)
+sim.add_argument("time", help="the length of time that will be simulated", type=float)
 sim.add_argument("-t", "--time_step", help="the amount of time in between each simulation update", type=float)
 sim.add_argument("-b", "--barnes_hut", 
                  help="Use the barnes-hut algorithm to speed up execution for a large # of particles",
                  action="store_true")
 sim.add_argument("-c", "--collide_radius", help="Allow particles to collide elastically with a specified radius",
                  type=float)
+sim.add_argument("-s", "--save_every", help="Only save 1 frame per n frames generated",
+                 type=int, default=1)
 sim.add_argument("-G", "--G_Constant", help="Set value of gravitational constant",
                  type=float, default=1)
 
@@ -60,7 +62,7 @@ if args.mode == "S":
     sim = nbody.NBody.FromFile(args.input_file, barnes_hut=args.barnes_hut,
                                use_collisions=colliding, particle_radius=args.collide_radius,
                                G=args.G_Constant)
-    sim.save(t_step, args.output_dir, numFrames)
+    sim.save(t_step, args.output_dir, numFrames, saveEvery=args.save_every)
 
 else:
     view = nbody_view.NBodyView(args.input_dir, args.size, not args.use_2d,

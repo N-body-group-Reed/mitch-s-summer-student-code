@@ -119,7 +119,7 @@ class NBodyView:
         minEnergy = None
         maxEnergy = None
         
-        for i in range(5000):
+        for i in range(0, 5000):
             data = np.load(self.path + '/' + str(i) + '.npy')
             pos = data[:, :3]
             
@@ -129,16 +129,18 @@ class NBodyView:
             if maxEnergy == None or e > maxEnergy:
                 maxEnergy = e
         
-        print(maxEnergy, minEnergy)
         variability = (maxEnergy - minEnergy) / minEnergy
         
         return variability < acceptableError
 
 if __name__ == '__main__':
-    abc = NBodyView('animations/3_body_same_mass/0000', 200, True)
-    abc.display()
+    # abc = NBodyView('animations/3_body_same_mass/0000', 200, True)
+    # abc.display()
     
-    # for i in range(10):
-    #     abc = NBodyView('animations/3_body_same_mass/%04d' % i, 40)
-    #     print(abc.isEnergyConserved())
+    for i in range(1075, 1076):
+        abc = NBodyView('animations/3_body_same_mass/%04d' % i, 40)
+        if i % 50 == 0:
+            print('-')
+        if (not abc.isEnergyConserved()):
+            print(i)
             
