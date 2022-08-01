@@ -47,23 +47,40 @@ This improved efficiency comes with a cost to accuracy. The two plots below show
 
 ## Installation
 
-NBody can be installed with either pip (the python package manager)
+### Pip
+
+Installing this package through pip is fairly simple:
 
 ```bash
-$ pip install nbody
+pip install nbody
 ```
 
-OR through cloning the repository
+### From source
+
+First clone this repo:
 
 ```bash
-$ git clone https://codeberg.org/uzairn/nbody
+$ git clone https://codeberg.org/uzairn/nbody.git
+```
+
+Then navigate to the top directory of the repo and build the package:
+
+```bash
+$ pip install build
+$ python3 -m build
+```
+
+Now install the package using pip, replacing [version] with the current version of the package:
+
+```bash 
+$ pip install dist/nbody-[version].tar.gz
 ```
 
 ## Usage
 
-The command line tool can be accessed by running 
+The usage for the command line tool can be accessed as shown: 
 ```bash
-$ python3 main.py
+$ nbody --help
 ```
 
 There are two modes for this tool: simulation and visualization. 
