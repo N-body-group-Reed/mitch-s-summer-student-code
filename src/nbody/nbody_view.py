@@ -87,7 +87,6 @@ class NBodyView:
             self.energyAx.set_ylabel("Energy")
             axis_format = ticker.FormatStrFormatter("%.6f")
             self.energyAx.yaxis.set_major_formatter(axis_format)
-            print('text')
         else:
             if self.three_dimensional:
                 ax = plt.axes(xlim=(-self.size, self.size),
@@ -97,7 +96,6 @@ class NBodyView:
             else:
                 ax = plt.axes(xlim=(-self.size, self.size),
                               ylim=(-self.size, self.size))
-        
         
         self.scatter = ax.scatter(np.array([]), np.array([]))
         self.anim = FuncAnimation(fig, self.update_plot, interval=0.0001)

@@ -6,9 +6,9 @@ One of the areas in which our mathematical analytical tools are lacking is in th
 
 ## Background Information
 
-The n-body problem is the issue of accurately predicting the motion of multiple objects which are all being affected by each object's gravitational forces. This has many applications in astronomical research, as predicting the motion of planets, stars, and even large asteroids can be integral for any space-related research. However, effeciently and accurately predicting the motion of these objects has proven to be a mathematical challenge. Closed-form solutions have been argued to be impossible, since for every n-body system, there exist more unknown variables than equations to describe them. Because of this, we are forced to find methods to approximate the motion of these bodies.
+The n-body problem is the issue of accurately predicting the motion of multiple objects which are all being affected by each object's gravitational forces. This has many applications in astronomical research, as predicting the motion of planets, stars, and even large asteroids can be integral for any space-related research. However, effeciently and accurately predicting the motion of these objects has proven to be a mathematical challenge. Closed-form solutions have been argued to be impossible, since for every n-body system, there exist more unknown variables than equations to describe them [[1]](#1). Because of this, we are forced to find methods to approximate the motion of these bodies.
 
-One way to simulate gravitational interactions is to calculate the gravitational forces exerted by all bodies over very small time steps. Decreasing the amount of time in between simulation updates results in a higher accuracy, but takes longer to generate. For a large number of particles, measuring all the interacting forces between all of the particles is expensive. This is where further approximations, such as the Barnes-Hut method, come in. The Barnes-Hut method uses a quad tree that recursively divides particles up into their own cells, allowing nearby particles to be grouped together. Clusters of particles far away are approximated as a single mass at their center, allowing certain force calculations to be skipped entirely.  This allows for more efficient simulations at the cost of accuracy.
+One way to simulate gravitational interactions is to calculate the gravitational forces exerted by all bodies over very small time steps. Decreasing the amount of time in between simulation updates results in a higher accuracy, but takes longer to generate. For a large number of particles, measuring all the interacting forces between all of the particles is expensive. This is where further approximations, such as the Barnes-Hut method, come in. The Barnes-Hut method uses a quad tree that recursively divides particles up into their own cells, allowing nearby particles to be grouped together. Clusters of particles far away are approximated as a single mass at their center, allowing certain force calculations to be skipped entirely [[2]](#2).  This allows for more efficient simulations at the cost of accuracy. 
 
 But how do we quantify this inaccuracy? Since there aren't always known solutions to the motion of interacting particles, the simplest way to verify results is to measure the total energy of the system over time. Realistically, the energy should remain constant as long as there are no external forces acting on any particle. Although a constant energy doesn't guarantee that the results are correct, it can still be used as a way to check that the results of a simulation are reasonable.
 
@@ -18,23 +18,36 @@ This python package was created with the purpose of being an easy-to-use tool to
 
 The figure below shows the time it takes to generate a single frame using both the barnes-hut tree and naive simulation methods. For a small number of particles, the barnes-hut method is slower due to the initial time it takes to create the quadtree. But, with a larger number of particles (more than ~4000 based on this graph), the barnes-hut tree generates frames much faster due to the fact that it is performing less calculations.
 
-![Barnes-Hut vs Naive Efficiency](plots/bh_v_naive_frame_gen_time.png)
+<p align="center">
+    <img
+    src="plots/bh_v_naive_frame_gen_time.png"
+    alt="Barnes-Hut vs Naive Efficiency">
+</p>
 
 This improved efficiency comes with a cost to accuracy. The two plots below show the total energy of a simulation of 100 particles in an orbit over 20 time units, with a step size of 0.1 time units. In this case, the naive simulation's energy varies by about 0.03 energy units while the barnes-hut simulation varies by about 4 energy units. Both variations are relatively small, but it's clear that the naive simulation is more accurate.
 
-<figure>
+
+<p align="center">
+  <b>Naive Energy Conservation</b>
+</p>
+<p align="center">
   <img
   src="plots/naive_energy_100particles_0.01step.png"
   alt="Naive Energy Conservation Plot">
-  <figcaption>Naive Energy Conservation</figcaption>
-</figure>
+</p>
 
-<figure>
+<br>
+<br>
+
+
+<p align="center">
+  <b>Barnes-Hut Energy Conservation</b>
+</p>
+<p align="center">
   <img
   src="plots/bh_energy_100particles_0.01step.png"
   alt="Barnes-Hut Energy Conservation Plot">
-  <figcaption>Barnes-Hut Energy Conservation</figcaption>
-</figure>
+</p>
 
 ## Features
 
@@ -108,12 +121,20 @@ The output of a simulation will be placed in a specified directory in the format
 
 The visualization mode allows you to view the results of a simulation.
 To see all of the available visualization options, run:
+
 ```bash
 $ python3 main.py V --help
 ```
 
 ## Sources
+<a id="1">[1]</a>
+M. Burdorf, “Analyzing Cosmological Evolution through n-body Simulation of Dark and Luminous Matter using ChaNGa,” thesis, 2021. 
+
+<a id="2">[2]</a>
+J. Barnes and P. Hut, “A hierarchical o(n log n) force-calculation algorithm,” Nature, vol. 324, no. 6096, pp. 446–449, Dec. 1986. 
+
+<a id="3">[3]</a>
+P. Mocz, “Create Your Own N-body Simulation (With Python),” Medium, Sep. 2022.
 
 
 
-    
