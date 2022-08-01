@@ -1,3 +1,17 @@
+Metadata-Version: 2.1
+Name: nbody
+Version: 0.1.0
+Summary: A gravitational n-body simulation package with features such as a barnes-hut tree, visualization tools, and CLI.
+Home-page: https://codeberg.org/uzairn/nbody
+Author: Uzair Nawaz
+Author-email: uzairn@icloud.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GPLv3
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
 # NBody
 
 ## Abstract

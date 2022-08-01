@@ -1,7 +1,6 @@
 
 import numpy as np
-import physics_helper as ph
-import math
+import nbody.physics_helper as ph
 
 class BarnesHutNode:
     def __init__(self, center, width):

@@ -49,6 +49,9 @@ class NBodyView:
                 self.energyX = np.append(self.energyX, [frame_number * self.t * self.timeScale])
                 self.energyY = np.append(self.energyY, [energy])
                 plt.cla()
+                self.energyAx.set_title("Energy Plot")
+                self.energyAx.set_xlabel("Time")
+                self.energyAx.set_ylabel("Energy")
                 self.energyAx.scatter(self.energyX, self.energyY, 9, color='blue')
             
             if self.relativeToCenterOfMass:
@@ -79,8 +82,12 @@ class NBodyView:
                                  ylim=(-self.size, self.size))
 
             self.energyAx = plt.subplot(grid[2:,0])
+            self.energyAx.set_title("Total Energy Over Time")
+            self.energyAx.set_xlabel("Time")
+            self.energyAx.set_ylabel("Energy")
             axis_format = ticker.FormatStrFormatter("%.6f")
             self.energyAx.yaxis.set_major_formatter(axis_format)
+            print('text')
         else:
             if self.three_dimensional:
                 ax = plt.axes(xlim=(-self.size, self.size),
@@ -134,13 +141,13 @@ class NBodyView:
         return variability < acceptableError
 
 if __name__ == '__main__':
-    # abc = NBodyView('animations/3_body_same_mass/0000', 200, True)
-    # abc.display()
+    abc = NBodyView('../../animations/3_body_same_mass/0000', 200, plot_energy=True, timeScale=10)
+    abc.display()
     
-    for i in range(1075, 1076):
-        abc = NBodyView('animations/3_body_same_mass/%04d' % i, 40)
-        if i % 50 == 0:
-            print('-')
-        if (not abc.isEnergyConserved()):
-            print(i)
+    # for i in range(1075, 1076):
+    #     abc = NBodyView('../../animations/3_body_same_mass/%04d' % i, 40)
+    #     if i % 50 == 0:
+    #         print('-')
+    #     if (not abc.isEnergyConserved()):
+    #         print(i)
             
