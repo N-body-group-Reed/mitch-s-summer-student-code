@@ -7,14 +7,16 @@ Created on Wed Jul 13 10:17:07 2022
 """
 
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 from matplotlib import ticker
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+import sys
 
 
 class NBodyView:
     def __init__(self, path, size, three_dimensional=True, relativeToCenterOfMass=True,
-                 timeScale=1, plot_energy=False):
+                 timeScale=1, plot_energy=False, output_file=None):
         
         self.path = path
         self.size = size
@@ -22,11 +24,13 @@ class NBodyView:
         self.relativeToCenterOfMass = relativeToCenterOfMass
         self.timeScale = timeScale
         self.plot_energy = plot_energy
+        self.output_file = output_file
         self.energyX = np.array([])
         self.energyY = np.array([])
         self.energyAx = None
         
         self.anim = None
+        self.end_anim = False
         self.old_com = np.zeros(3)
         self.scatter = None
         self.energy_scatter = None
@@ -62,7 +66,14 @@ class NBodyView:
             else:
                 self.scatter.set_offsets(pos[:, :2])
         except FileNotFoundError:
-            self.anim.event_source.stop()
+            self.end_anim = True
+            # self.anim.event_source.stop()
+    
+    def frames_gen(self):
+        i = 0
+        while not self.end_anim:
+            yield i
+            i += 1
                 
     def display(self):
         fig = plt.figure(figsize=(7,7))
@@ -98,9 +109,13 @@ class NBodyView:
                               ylim=(-self.size, self.size))
         
         self.scatter = ax.scatter(np.array([]), np.array([]))
-        self.anim = FuncAnimation(fig, self.update_plot, interval=0.0001)
+        self.anim = FuncAnimation(fig, self.update_plot, frames=self.frames_gen, interval=0.0001, save_count=sys.maxsize)
         
-        plt.show()
+        if self.output_file is None:
+            plt.show()
+        else:
+            w = FFMpegWriter(fps=30)
+            self.anim.save(self.output_file, writer=w)
         
     def calc_energy(self, pos, vel):
         KE = 0

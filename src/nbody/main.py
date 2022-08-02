@@ -42,7 +42,7 @@ def main():
                     type=float, default=1)
 
     view.add_argument("input_dir", help="directory containing simulation data")
-    view.add_argument("-s", "--size", help="Set size of display", default=100, type=int)
+    view.add_argument("-s", "--size", help="Set size of display", default=100, type=float)
     view.add_argument("-d", "--use_2d", help="display particles in a 2d projection instead of 3d",
                     action="store_true")
     view.add_argument("-r", "--relative", help="keep view relative to center of mass",
@@ -51,6 +51,7 @@ def main():
                     action="store_true")
     view.add_argument("-t", "--time_scale", help="speed up visualization by a given factor",
                     default=1, type=int)
+    view.add_argument("-o", "--output_file", help="store the output visualization in a video file")
 
     args = parser.parse_args()
     try:
@@ -67,7 +68,8 @@ def main():
 
         elif args.mode == "V":
             view = nbody_view.NBodyView(args.input_dir, args.size, not args.use_2d,
-                                        args.relative, args.time_scale, args.energy)
+                                        args.relative, args.time_scale, args.energy,
+                                        args.output_file)
             view.display()
 
         else:
