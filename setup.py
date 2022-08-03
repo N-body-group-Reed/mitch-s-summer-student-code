@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="",
+    name="gravbody",
     version="0.1.0",
     author="Uzair Nawaz",
     author_email="uzairn@icloud.com",
@@ -43,7 +43,7 @@ setup(
     # bottom of the file as well -- I have never tested a different approach
     entry_points={
         'console_scripts': [
-            'nbody = nbody.main:main'
+            'gravbody = gravbody.main:main'
         ]
     },
 

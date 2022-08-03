@@ -1,8 +1,8 @@
-# NBody
+# GravBody
 
 ## Abstract
 
-One of the areas in which our mathematical analytical tools are lacking is in the prediction of gravitational interactions between three or more masses. Although a closed form solution for the motion caused by gravitational interactions exists for two-body systems and certain initial conditions of three body systems, there doesn't exist a general solution for any number of interacting bodies. N-body simulations are used to approximate the motion of multiple gravitating bodies, but maintaining accuracy over long intervals of time is difficult due to the high level of dependence of each particle's motion on every other particles' motions. NBody is a python package that aims to efficiently and accurately simulate the motion of particles affected by gravitational forces while also being easy to use and accessible. 
+One of the areas in which our mathematical analytical tools are lacking is in the prediction of gravitational interactions between three or more masses. Although a closed form solution for the motion caused by gravitational interactions exists for two-body systems and certain initial conditions of three body systems, there doesn't exist a general solution for any number of interacting bodies. N-body simulations are used to approximate the motion of multiple gravitating bodies, but maintaining accuracy over long intervals of time is difficult due to the high level of dependence of each particle's motion on every other particles' motions. GravBody is a python package that aims to efficiently and accurately simulate the motion of particles affected by gravitational forces while also being easy to use and accessible. 
 
 ## Background Information
 
@@ -65,7 +65,7 @@ This improved efficiency comes with a cost to accuracy. The two plots below show
 Installing this package through pip is fairly simple:
 
 ```bash
-pip install nbody
+pip install gravbody
 ```
 
 ### From source
@@ -73,7 +73,7 @@ pip install nbody
 First clone this repo:
 
 ```bash
-$ git clone https://codeberg.org/uzairn/nbody.git
+$ git clone https://codeberg.org/uzairn/gravbody.git
 ```
 
 Then navigate to the top directory of the repo and build the package:
@@ -86,14 +86,14 @@ $ python3 -m build
 Now install the package using pip, replacing [version] with the current version of the package:
 
 ```bash 
-$ pip install dist/nbody-[version].tar.gz
+$ pip install dist/gravbody-[version].tar.gz
 ```
 
 ## Usage
 
 The usage for the command line tool can be accessed as shown: 
 ```bash
-$ nbody --help
+$ gravbody --help
 ```
 
 There are two modes for this tool: simulation and visualization. 
@@ -103,7 +103,7 @@ There are two modes for this tool: simulation and visualization.
 The simulation mode generates the files storing data on how the system evolves after a given set of initial conditions.
 To see all of the available simulation options, run:
 ```bash
-$ python3 main.py S --help
+$ gravbody S --help
 ```
 The initial conditions file should be formatted in the following form:
 ```text
@@ -123,7 +123,7 @@ The visualization mode allows you to view the results of a simulation.
 To see all of the available visualization options, run:
 
 ```bash
-$ python3 main.py V --help
+$ gravbody V --help
 ```
 
 ## Sources

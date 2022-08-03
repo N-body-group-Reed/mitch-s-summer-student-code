@@ -15,8 +15,8 @@ Created on Fri Jul 22 11:45:59 2022
 # This visualizes the simulation with an energy plot as well
 # Watch the scale of the energy plot: it's zoomed in so it seems like it varies more than it does
 
-import nbody.nbody as nbody
-import nbody.nbody_view as nbody_view
+import gravbody.nbody as nbody
+import gravbody.nbody_view as nbody_view
 import argparse
 
 def main():

@@ -1,7 +1,7 @@
 
 import numpy as np
-import nbody.barnes_hut as bh
-import nbody.physics_helper as ph
+import gravbody.barnes_hut as bh
+import gravbody.physics_helper as ph
 import time
 
 class NBody:
