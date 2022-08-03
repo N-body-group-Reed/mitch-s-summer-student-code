@@ -40,6 +40,8 @@ def main():
                     type=int, default=1)
     sim.add_argument("-G", "--G_Constant", help="Set value of gravitational constant",
                     type=float, default=1)
+    sim.add_argument("-f", "--force_softening", help="Aritifically increase distance to avoid unexpected behaviour near collisions",
+                    type=float, default=0)
 
     view.add_argument("input_dir", help="directory containing simulation data")
     view.add_argument("-s", "--size", help="Set size of display", default=100, type=float)
@@ -63,7 +65,7 @@ def main():
             
             sim = nbody.NBody.FromFile(args.input_file, barnes_hut=args.barnes_hut,
                                     use_collisions=colliding, particle_radius=args.collide_radius,
-                                    G=args.G_Constant)
+                                    G=args.G_Constant, softening=args.force_softening)
             sim.save(t_step, args.output_dir, numFrames, saveEvery=args.save_every)
 
         elif args.mode == "V":
