@@ -47,7 +47,6 @@ class NBodyView:
             com = np.sum(pos * self.masses.reshape(len(self.masses), 1), axis=0) / np.sum(self.masses)
             com_vel = (com - self.old_com) / (self.t * self.timeScale)
             self.old_com = com
-            
             if self.plot_energy and frame_number != 0:
                 energy = self.calc_energy(pos, vel)
                 self.energyX = np.append(self.energyX, [frame_number * self.t * self.timeScale])
@@ -74,7 +73,7 @@ class NBodyView:
         while not self.end_anim:
             yield i
             i += 1
-                
+
     def display(self):
         fig = plt.figure(figsize=(7,7))
         ax = None
